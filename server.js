@@ -101,7 +101,14 @@ const requireAuth = async (req, res, next) => {
     }
 
     try {
-      const session = await clerk.sessions.verifySession(token);
+      // Get the session token from the Authorization header
+      const sessionId = token;
+      const session = await clerk.sessions.getSession(sessionId);
+      
+      if (!session || !session.userId) {
+        return res.status(401).json({ error: 'Invalid session' });
+      }
+
       req.userId = session.userId;
       next();
     } catch (verifyError) {
