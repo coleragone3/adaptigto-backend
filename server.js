@@ -10,9 +10,11 @@ const port = process.env.PORT || 3001;
 const clerk = new Clerk({ secretKey: process.env.CLERK_SECRET_KEY });
 
 // Configure CORS
-const allowedOrigins = process.env.ALLOWED_ORIGINS 
-  ? process.env.ALLOWED_ORIGINS.split(',') 
-  : ['http://localhost:3000'];
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://adaptigto.vercel.app',
+  'https://adaptigto-git-main-coleragone3.vercel.app'
+];
 
 app.use(cors({
   origin: function(origin, callback) {
