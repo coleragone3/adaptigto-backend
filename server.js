@@ -101,19 +101,29 @@ const requireAuth = async (req, res, next) => {
     }
 
     try {
-      // Get the session token from the Authorization header
-      const sessionId = token;
-      const session = await clerk.sessions.getSession(sessionId);
+      // Verify the JWT token
+      const clientToken = await clerk.verifyToken(token);
       
-      if (!session || !session.userId) {
-        return res.status(401).json({ error: 'Invalid session' });
+      if (!clientToken || !clientToken.sub) {
+        return res.status(401).json({ error: 'Invalid token' });
       }
 
-      req.userId = session.userId;
+      // Get the user from Clerk
+      const user = await clerk.users.getUser(clientToken.sub);
+      if (!user) {
+        return res.status(401).json({ error: 'User not found' });
+      }
+
+      // Check if user is admin
+      if (user.primaryEmailAddress.emailAddress !== 'coleragone@gmail.com') {
+        return res.status(403).json({ error: 'Not authorized' });
+      }
+
+      req.userId = clientToken.sub;
       next();
     } catch (verifyError) {
-      console.error('Session verification failed:', verifyError);
-      return res.status(401).json({ error: 'Invalid session' });
+      console.error('Token verification failed:', verifyError);
+      return res.status(401).json({ error: 'Invalid token' });
     }
   } catch (error) {
     console.error('Auth error:', error);
