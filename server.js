@@ -12,8 +12,10 @@ const clerk = new Clerk({ secretKey: process.env.CLERK_SECRET_KEY });
 // Configure CORS
 const allowedOrigins = [
   'http://localhost:3000',
-  'https://adaptigto.vercel.app',
-  'https://adaptigto-git-main-coleragone3.vercel.app'
+  'https://adaptigto-frontend.vercel.app',
+  'https://adaptigto-frontend-git-main-coles-projects-4757d6eb.vercel.app',
+  'https://adaptigto-frontend-q1xbgmhbv-coles-projects-4757d6eb.vercel.app',
+  'https://adaptigto-frontend-5o0198zjp-coles-projects-4757d6eb.vercel.app'
 ];
 
 app.use(cors({
