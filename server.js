@@ -9,6 +9,53 @@ const port = process.env.PORT || 3001;
 // Initialize Clerk
 const clerk = new Clerk({ secretKey: process.env.CLERK_SECRET_KEY });
 
+// Visit tracking store
+const visits = {
+  total: 0,
+  today: 0,
+  thisWeek: 0,
+  lastReset: new Date(),
+  dailyVisits: {},
+  weeklyVisits: {}
+};
+
+// Reset counters daily and weekly
+setInterval(() => {
+  const now = new Date();
+  const dayKey = now.toISOString().split('T')[0];
+  const weekKey = `${now.getFullYear()}-W${Math.ceil((now.getDate() + now.getDay()) / 7)}`;
+  
+  // Reset daily counter at midnight
+  if (!visits.dailyVisits[dayKey]) {
+    visits.today = 0;
+    visits.dailyVisits[dayKey] = 0;
+  }
+  
+  // Reset weekly counter on Sunday midnight
+  if (!visits.weeklyVisits[weekKey]) {
+    visits.thisWeek = 0;
+    visits.weeklyVisits[weekKey] = 0;
+  }
+}, 1000 * 60); // Check every minute
+
+// Middleware to track visits
+app.use((req, res, next) => {
+  // Only count page views, not API calls
+  if (!req.path.startsWith('/api/')) {
+    const now = new Date();
+    const dayKey = now.toISOString().split('T')[0];
+    const weekKey = `${now.getFullYear()}-W${Math.ceil((now.getDate() + now.getDay()) / 7)}`;
+    
+    visits.total++;
+    visits.today++;
+    visits.thisWeek++;
+    
+    visits.dailyVisits[dayKey] = (visits.dailyVisits[dayKey] || 0) + 1;
+    visits.weeklyVisits[weekKey] = (visits.weeklyVisits[weekKey] || 0) + 1;
+  }
+  next();
+});
+
 // Configure CORS
 const allowedOrigins = [
   'http://localhost:3000',
@@ -132,6 +179,28 @@ app.get('/api/admin/users', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('Admin endpoint error:', error);
     res.status(500).json({ error: 'Failed to fetch users' });
+  }
+});
+
+// Admin visits endpoint
+app.get('/api/admin/visits', requireAuth, async (req, res) => {
+  try {
+    // Verify admin access
+    const adminUser = await clerk.users.getUser(req.userId);
+    if (adminUser.emailAddresses[0].emailAddress !== 'coleragone@gmail.com') {
+      return res.status(403).json({ error: 'Unauthorized access' });
+    }
+
+    res.json({
+      total: visits.total,
+      today: visits.today,
+      thisWeek: visits.thisWeek,
+      dailyVisits: visits.dailyVisits,
+      weeklyVisits: visits.weeklyVisits
+    });
+  } catch (error) {
+    console.error('Error fetching visits:', error);
+    res.status(500).json({ error: 'Failed to fetch visit statistics' });
   }
 });
 
