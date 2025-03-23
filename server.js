@@ -101,12 +101,12 @@ const requireAuth = async (req, res, next) => {
     }
 
     try {
-      const decoded = await clerk.verifyToken(token);
-      req.userId = decoded.sub;
+      const session = await clerk.sessions.verifySession(token);
+      req.userId = session.userId;
       next();
     } catch (verifyError) {
-      console.error('Token verification failed:', verifyError);
-      return res.status(401).json({ error: 'Invalid token' });
+      console.error('Session verification failed:', verifyError);
+      return res.status(401).json({ error: 'Invalid session' });
     }
   } catch (error) {
     console.error('Auth error:', error);
