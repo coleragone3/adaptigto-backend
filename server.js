@@ -97,29 +97,40 @@ const requireAuth = async (req, res, next) => {
   try {
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) {
+      console.log('No token provided in request');
       return res.status(401).json({ error: 'No token provided' });
     }
 
     try {
-      // Verify the JWT token
-      const clientToken = await clerk.verifyToken(token);
+      console.log('Attempting to verify token...');
+      const decoded = await clerk.verifyToken(token);
+      console.log('Token verified, decoded:', decoded ? 'success' : 'failed');
       
-      if (!clientToken || !clientToken.sub) {
-        return res.status(401).json({ error: 'Invalid token' });
+      if (!decoded || !decoded.sub) {
+        console.log('Invalid token structure');
+        return res.status(401).json({ error: 'Invalid token structure' });
       }
 
       // Get the user from Clerk
-      const user = await clerk.users.getUser(clientToken.sub);
+      console.log('Fetching user with ID:', decoded.sub);
+      const user = await clerk.users.getUser(decoded.sub);
+      
       if (!user) {
+        console.log('User not found');
         return res.status(401).json({ error: 'User not found' });
       }
 
       // Check if user is admin
-      if (user.primaryEmailAddress.emailAddress !== 'coleragone@gmail.com') {
+      const userEmail = user.emailAddresses.find(email => email.id === user.primaryEmailAddressId)?.emailAddress;
+      console.log('User email:', userEmail);
+      
+      if (userEmail !== 'coleragone@gmail.com') {
+        console.log('User not authorized');
         return res.status(403).json({ error: 'Not authorized' });
       }
 
-      req.userId = clientToken.sub;
+      console.log('User authorized successfully');
+      req.userId = decoded.sub;
       next();
     } catch (verifyError) {
       console.error('Token verification failed:', verifyError);
