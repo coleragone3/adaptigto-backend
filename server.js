@@ -146,9 +146,11 @@ const requireAuth = async (req, res, next) => {
       // Check if user is admin
       const userEmail = user.emailAddresses.find(email => email.id === user.primaryEmailAddressId)?.emailAddress;
       console.log('User email:', userEmail);
-      console.log('Is admin email:', userEmail === 'coleragone@gmail.com');
+      const adminEmails = ['coleragone@gmail.com', 'ben.greenspon@gmail.com', 'ztsakounis@gmail.com'];
+      const isAdmin = adminEmails.includes(userEmail);
+      console.log('Is admin email:', isAdmin);
       
-      if (userEmail !== 'coleragone@gmail.com') {
+      if (!isAdmin) {
         console.log('User not authorized');
         console.log('=== Auth Debug End ===');
         return res.status(403).json({ error: 'Not authorized' });
@@ -209,7 +211,8 @@ app.get('/api/admin/users', requireAuth, async (req, res) => {
     
     // Verify admin access
     const adminUser = await clerk.users.getUser(req.userId);
-    if (adminUser.emailAddresses[0].emailAddress !== 'coleragone@gmail.com') {
+    const adminEmails = ['coleragone@gmail.com', 'ben.greenspon@gmail.com', 'ztsakounis@gmail.com'];
+    if (!adminEmails.includes(adminUser.emailAddresses[0].emailAddress)) {
       console.log('Unauthorized access attempt');
       return res.status(403).json({ error: 'Unauthorized access' });
     }
@@ -243,7 +246,8 @@ app.get('/api/admin/visits', requireAuth, async (req, res) => {
   try {
     // Verify admin access
     const adminUser = await clerk.users.getUser(req.userId);
-    if (adminUser.emailAddresses[0].emailAddress !== 'coleragone@gmail.com') {
+    const adminEmails = ['coleragone@gmail.com', 'ben.greenspon@gmail.com', 'ztsakounis@gmail.com'];
+    if (!adminEmails.includes(adminUser.emailAddresses[0].emailAddress)) {
       return res.status(403).json({ error: 'Unauthorized access' });
     }
 
