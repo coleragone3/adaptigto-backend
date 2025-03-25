@@ -69,7 +69,9 @@ const allowedOrigins = [
   'https://adaptigto-frontend.vercel.app',
   'https://adaptigto-frontend-git-main-coles-projects-4757d6eb.vercel.app',
   'https://adaptigto-frontend-q1xbgmhbv-coles-projects-4757d6eb.vercel.app',
-  'https://adaptigto-frontend-5o0198zjp-coles-projects-4757d6eb.vercel.app'
+  'https://adaptigto-frontend-5o0198zjp-coles-projects-4757d6eb.vercel.app',
+  'https://adaptigto.vercel.app',
+  'https://adaptigto.com'
 ];
 
 // CORS configuration
