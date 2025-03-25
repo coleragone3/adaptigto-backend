@@ -36,24 +36,31 @@ setInterval(() => {
     visits.thisWeek = 0;
     visits.weeklyVisits[weekKey] = 0;
   }
-}, 1000 * 60); // Check every minute
+}, 1000 * 60);
 
-// Middleware to track visits
-app.use((req, res, next) => {
-  // Only count page views, not API calls
-  if (!req.path.startsWith('/api/')) {
-    const now = new Date();
-    const dayKey = now.toISOString().split('T')[0];
-    const weekKey = `${now.getFullYear()}-W${Math.ceil((now.getDate() + now.getDay()) / 7)}`;
-    
-    visits.total++;
-    visits.today++;
-    visits.thisWeek++;
-    
-    visits.dailyVisits[dayKey] = (visits.dailyVisits[dayKey] || 0) + 1;
-    visits.weeklyVisits[weekKey] = (visits.weeklyVisits[weekKey] || 0) + 1;
+// Function to record a visit
+const recordVisit = () => {
+  const now = new Date();
+  const dayKey = now.toISOString().split('T')[0];
+  const weekKey = `${now.getFullYear()}-W${Math.ceil((now.getDate() + now.getDay()) / 7)}`;
+  
+  visits.total++;
+  visits.today++;
+  visits.thisWeek++;
+  
+  visits.dailyVisits[dayKey] = (visits.dailyVisits[dayKey] || 0) + 1;
+  visits.weeklyVisits[weekKey] = (visits.weeklyVisits[weekKey] || 0) + 1;
+};
+
+// Endpoint to record a visit
+app.post('/api/record-visit', async (req, res) => {
+  try {
+    recordVisit();
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error recording visit:', error);
+    res.status(500).json({ error: 'Failed to record visit' });
   }
-  next();
 });
 
 // Configure CORS
@@ -95,49 +102,68 @@ app.get('/', (req, res) => {
 // Middleware to verify Clerk token
 const requireAuth = async (req, res, next) => {
   try {
+    console.log('=== Auth Debug Start ===');
+    console.log('Headers:', req.headers);
+    
     const token = req.headers.authorization?.split(' ')[1];
     if (!token) {
       console.log('No token provided in request');
+      console.log('=== Auth Debug End ===');
       return res.status(401).json({ error: 'No token provided' });
     }
 
     try {
+      console.log('Token found:', token.substring(0, 10) + '...');
+      console.log('CLERK_SECRET_KEY exists:', !!process.env.CLERK_SECRET_KEY);
+      
       console.log('Attempting to verify token...');
       const decoded = await clerk.verifyToken(token);
-      console.log('Token verified, decoded:', decoded ? 'success' : 'failed');
+      console.log('Token verification result:', {
+        success: !!decoded,
+        sub: decoded?.sub,
+        hasUserId: !!decoded?.sub
+      });
       
       if (!decoded || !decoded.sub) {
         console.log('Invalid token structure');
+        console.log('=== Auth Debug End ===');
         return res.status(401).json({ error: 'Invalid token structure' });
       }
 
       // Get the user from Clerk
       console.log('Fetching user with ID:', decoded.sub);
       const user = await clerk.users.getUser(decoded.sub);
+      console.log('User found:', !!user);
       
       if (!user) {
         console.log('User not found');
+        console.log('=== Auth Debug End ===');
         return res.status(401).json({ error: 'User not found' });
       }
 
       // Check if user is admin
       const userEmail = user.emailAddresses.find(email => email.id === user.primaryEmailAddressId)?.emailAddress;
       console.log('User email:', userEmail);
+      console.log('Is admin email:', userEmail === 'coleragone@gmail.com');
       
       if (userEmail !== 'coleragone@gmail.com') {
         console.log('User not authorized');
+        console.log('=== Auth Debug End ===');
         return res.status(403).json({ error: 'Not authorized' });
       }
 
       console.log('User authorized successfully');
+      console.log('=== Auth Debug End ===');
       req.userId = decoded.sub;
       next();
     } catch (verifyError) {
       console.error('Token verification failed:', verifyError);
+      console.log('=== Auth Debug End ===');
       return res.status(401).json({ error: 'Invalid token' });
     }
   } catch (error) {
     console.error('Auth error:', error);
+    console.log('=== Auth Debug End ===');
     res.status(401).json({ error: 'Authentication failed' });
   }
 };
